@@ -4056,6 +4056,7 @@ func TestIssue429(t *testing.T) {
 			t.Errorf("unexpected success")
 		}
 	}
+}
 
 type EsDocument interface {
 	IndexName() string

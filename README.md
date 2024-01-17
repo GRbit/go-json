@@ -201,7 +201,7 @@ Therefore, by directly handling `*reflect.rtype`, which is an implementation of 
 
 The technique for working with `*reflect.rtype` directly from `go-json` is implemented at [rtype.go](https://github.com/grbit/go-json/blob/master/internal/runtime/rtype.go)
 
-Also, the same technique is cut out as a library ( https://github.com/goccy/go-reflect )
+Also, the same technique is cut out as a library ( https://github.com/grbit/go-reflect )
 
 Initially this feature was the default behavior of `go-json`.
 But after careful testing, I found that I passed a large value to `json.Marshal()` and if the argument could not be assigned to the stack, it could not be properly escaped to the heap (a bug in the Go compiler).
