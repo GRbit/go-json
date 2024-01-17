@@ -1,3 +1,3 @@
 module github.com/grbit/go-json
 
-go 1.12
+go 1.19

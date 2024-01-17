@@ -1022,18 +1022,27 @@ func (u *unmarshalerText) UnmarshalText(b []byte) error {
 }
 
 func TestTextMarshalerMapKeysAreSorted(t *testing.T) {
-	b, err := json.Marshal(map[unmarshalerText]int{
+	data := map[unmarshalerText]int{
 		{"x", "y"}: 1,
 		{"y", "x"}: 2,
 		{"a", "z"}: 3,
 		{"z", "a"}: 4,
-	})
+	}
+	b, err := json.Marshal(data)
 	if err != nil {
 		t.Fatalf("Failed to Marshal text.Marshaler: %v", err)
 	}
 	const want = `{"a:z":3,"x:y":1,"y:x":2,"z:a":4}`
 	if string(b) != want {
 		t.Errorf("Marshal map with text.Marshaler keys: got %#q, want %#q", b, want)
+	}
+
+	b, err = stdjson.Marshal(data)
+	if err != nil {
+		t.Fatalf("Failed to std Marshal text.Marshaler: %v", err)
+	}
+	if string(b) != want {
+		t.Errorf("std Marshal map with text.Marshaler keys: got %#q, want %#q", b, want)
 	}
 }
 
@@ -2604,4 +2613,100 @@ func TestIssue386(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+type customMapKey string
+
+func (b customMapKey) MarshalJSON() ([]byte, error) {
+	return []byte("[]"), nil
+}
+
+func TestCustomMarshalForMapKey(t *testing.T) {
+	m := map[customMapKey]string{customMapKey("skipcustom"): "test"}
+	expected, err := stdjson.Marshal(m)
+	assertErr(t, err)
+	got, err := json.Marshal(m)
+	assertErr(t, err)
+	assertEq(t, "custom map key", string(expected), string(got))
+}
+
+func TestIssue391(t *testing.T) {
+	type A struct {
+		X string `json:"x,omitempty"`
+	}
+	type B struct {
+		A
+	}
+	type C struct {
+		X []int `json:"x,omitempty"`
+	}
+	for _, tc := range []struct {
+		name string
+		in   interface{}
+		out  string
+	}{
+		{in: struct{ B }{}, out: "{}"},
+		{in: struct {
+			B
+			Y string `json:"y"`
+		}{}, out: `{"y":""}`},
+		{in: struct {
+			Y string `json:"y"`
+			B
+		}{}, out: `{"y":""}`},
+		{in: struct{ C }{}, out: "{}"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(tc.in)
+			assertErr(t, err)
+			assertEq(t, "unexpected result", tc.out, string(b))
+		})
+	}
+}
+
+func TestIssue417(t *testing.T) {
+	x := map[string]string{
+		"b": "b",
+		"a": "a",
+	}
+	b, err := json.MarshalIndentWithOption(x, "", " ", json.UnorderedMap())
+	assertErr(t, err)
+
+	var y map[string]string
+	err = json.Unmarshal(b, &y)
+	assertErr(t, err)
+
+	assertEq(t, "key b", "b", y["b"])
+	assertEq(t, "key a", "a", y["a"])
+}
+
+func TestIssue426(t *testing.T) {
+	type I interface {
+		Foo()
+	}
+	type A struct {
+		I
+		Val string
+	}
+	var s A
+	s.Val = "456"
+
+	b, _ := json.Marshal(s)
+	assertEq(t, "unexpected result", `{"I":null,"Val":"456"}`, string(b))
+}
+
+func TestIssue441(t *testing.T) {
+	type A struct {
+		Y string `json:"y,omitempty"`
+	}
+
+	type B struct {
+		X *int `json:"x,omitempty"`
+		A
+		Z int `json:"z,omitempty"`
+	}
+
+	b, err := json.Marshal(B{})
+	assertErr(t, err)
+	assertEq(t, "unexpected result", "{}", string(b))
 }

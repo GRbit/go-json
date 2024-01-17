@@ -197,6 +197,13 @@ func Test_Decoder(t *testing.T) {
 			assertEq(t, "interface{}", v.F, nil)
 			assertEq(t, "nilfunc", true, v.G == nil)
 		})
+		t.Run("struct.pointer must be nil", func(t *testing.T) {
+			var v struct {
+				A *int
+			}
+			json.Unmarshal([]byte(`{"a": "alpha"}`), &v)
+			assertEq(t, "struct.A", v.A, (*int)(nil))
+		})
 	})
 	t.Run("interface", func(t *testing.T) {
 		t.Run("number", func(t *testing.T) {
@@ -280,6 +287,14 @@ func Test_Decoder_DisallowUnknownFields(t *testing.T) {
 	if err.Error() != `json: unknown field "x"` {
 		t.Fatal("expected unknown field error")
 	}
+}
+
+func Test_Decoder_EmptyObjectWithSpace(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader(`{"obj":{ }}`))
+	var v struct {
+		Obj map[string]int `json:"obj"`
+	}
+	assertErr(t, dec.Decode(&v))
 }
 
 type unmarshalJSON struct {
@@ -4005,6 +4020,42 @@ func TestIssue384(t *testing.T) {
 		}
 	}
 }
+
+func TestIssue408(t *testing.T) {
+	type T struct {
+		Arr [2]int32 `json:"arr"`
+	}
+	var v T
+	if err := json.Unmarshal([]byte(`{"arr": [1,2]}`), &v); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestIssue416(t *testing.T) {
+	b := []byte(`{"Сообщение":"Текст"}`)
+
+	type T struct {
+		Msg string `json:"Сообщение"`
+	}
+	var x T
+	err := json.Unmarshal(b, &x)
+	assertErr(t, err)
+	assertEq(t, "unexpected result", "Текст", x.Msg)
+}
+
+func TestIssue429(t *testing.T) {
+	var x struct {
+		N int32
+	}
+	for _, b := range []string{
+		`{"\u"`,
+		`{"\u0"`,
+		`{"\u00"`,
+	} {
+		if err := json.Unmarshal([]byte(b), &x); err == nil {
+			t.Errorf("unexpected success")
+		}
+	}
 
 type EsDocument interface {
 	IndexName() string
