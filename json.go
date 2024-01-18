@@ -166,8 +166,21 @@ type UnmarshalerContext interface {
 // JSON cannot represent cyclic data structures and Marshal does not
 // handle them. Passing cyclic structures to Marshal will result in
 // an infinite recursion.
-func Marshal(v interface{}) ([]byte, error) {
-	return MarshalWithOption(v)
+func Marshal(v interface{}) (b []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			b, err = json.Marshal(v)
+
+			return
+		}
+	}()
+
+	b, err = MarshalWithOption(v)
+	if err != nil {
+		b, err = json.Marshal(v)
+	}
+
+	return b, err
 }
 
 // MarshalNoEscape returns the JSON encoding of v and doesn't escape v.
@@ -188,8 +201,21 @@ func MarshalWithOption(v interface{}, optFuncs ...EncodeOptionFunc) ([]byte, err
 // MarshalIndent is like Marshal but applies Indent to format the output.
 // Each JSON element in the output will begin on a new line beginning with prefix
 // followed by one or more copies of indent according to the indentation nesting.
-func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
-	return MarshalIndentWithOption(v, prefix, indent)
+func MarshalIndent(v interface{}, prefix, indent string) (b []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			b, err = json.MarshalIndent(v, prefix, indent)
+
+			return
+		}
+	}()
+
+	b, err = MarshalIndentWithOption(v, prefix, indent)
+	if err != nil {
+		b, err = json.MarshalIndent(v, prefix, indent)
+	}
+
+	return b, err
 }
 
 // MarshalIndentWithOption is like Marshal but applies Indent to format the output with EncodeOption.
@@ -270,8 +296,21 @@ func MarshalIndentWithOption(v interface{}, prefix, indent string, optFuncs ...E
 // invalid UTF-16 surrogate pairs are not treated as an error.
 // Instead, they are replaced by the Unicode replacement
 // character U+FFFD.
-func Unmarshal(data []byte, v interface{}) error {
-	return unmarshal(data, v)
+func Unmarshal(data []byte, v interface{}) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = json.Unmarshal(data, v)
+
+			return
+		}
+	}()
+
+	err = unmarshal(data, v)
+	if err != nil {
+		err = json.Unmarshal(data, v)
+	}
+
+	return err
 }
 
 // UnmarshalContext parses the JSON-encoded data and stores the result

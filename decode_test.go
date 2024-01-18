@@ -202,7 +202,12 @@ func Test_Decoder(t *testing.T) {
 				A *int
 			}
 			json.Unmarshal([]byte(`{"a": "alpha"}`), &v)
-			assertEq(t, "struct.A", v.A, (*int)(nil))
+			// due to using stdlib encoding/json as a fallback
+			if v.A != nil { // stdlib puts a 0 here
+				assertEq(t, "struct.A", *v.A, 0)
+			} else {
+				assertEq(t, "struct.A", v.A, (*int)(nil))
+			}
 		})
 	})
 	t.Run("interface", func(t *testing.T) {
@@ -2360,7 +2365,9 @@ var decodeTypeErrorTests = []struct {
 func TestUnmarshalTypeError(t *testing.T) {
 	for _, item := range decodeTypeErrorTests {
 		err := json.Unmarshal([]byte(item.src), item.dest)
-		if _, ok := err.(*json.UnmarshalTypeError); !ok {
+		//if _, ok := err.(*json.UnmarshalTypeError); !ok {
+		// due to using stdlib encoding/json as a fallback
+		if err == nil {
 			t.Errorf("expected type error for Unmarshal(%q, type %T): got %T",
 				item.src, item.dest, err)
 		}
@@ -2382,7 +2389,9 @@ func TestUnmarshalSyntax(t *testing.T) {
 	var x interface{}
 	for _, src := range unmarshalSyntaxTests {
 		err := json.Unmarshal([]byte(src), &x)
-		if _, ok := err.(*json.SyntaxError); !ok {
+		//if _, ok := err.(*json.SyntaxError); !ok {
+		// due to using stdlib encoding/json as a fallback
+		if err == nil {
 			t.Errorf("expected syntax error for Unmarshal(%q): got %T", src, err)
 		}
 	}
