@@ -1,9 +1,13 @@
-# Disclaimer
-
-This fork is created only because I PR review/merge process in the original one was slower. I just wanted to have 
-some ubgs fixed, that's it.
-
-All kudos go to [Goccy](https://github.com/grbit/go-json)
+> [!WARNING]
+> **This fork is deprecated and no longer maintained.**
+> All fixes from it have been merged upstream. Please use
+> [goccy/go-json](https://github.com/goccy/go-json) instead.
+>
+> To migrate, replace the import path and update dependencies:
+>
+>     find . -name '*.go' -exec sed -i 's#github.com/grbit/go-json#github.com/goccy/go-json#g' {} +
+>     go get github.com/goccy/go-json@latest
+>     go mod tidy
 
 # go-json
 
